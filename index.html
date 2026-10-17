@@ -14,6 +14,8 @@ body{min-height:100vh;display:flex;flex-direction:column;align-items:center;just
 #name{min-height:1.3em}
 #name span{color:var(--snake);opacity:0;transform:scale(.6);transition:opacity .3s,transform .3s}
 #name span.on{opacity:1;transform:scale(1.1)}
+#love{font-size:clamp(1.1rem,5vw,1.6rem);font-weight:600;color:var(--food);opacity:0;transform:translateY(6px);transition:opacity .6s,transform .6s;min-height:1.3em}
+#love.on{opacity:1;transform:none}
 #info{display:flex;gap:24px;font-size:1rem}
 canvas{width:min(92vw,480px);height:auto;aspect-ratio:1;background:var(--board);border-radius:10px;touch-action:none}
 p{margin:0;color:var(--text);font-size:.9rem;text-align:center}
@@ -22,6 +24,7 @@ button{font:inherit;padding:8px 18px;border-radius:8px;border:1px solid var(--te
 </head>
 <body>
 <div id="name"></div>
+<div id="love">Изабелла + Роберт = ❤️</div>
 <div id="info"><span>Буквы: <b id="score">0</b></span><span>Рекорд: <b id="best">0</b></span></div>
 <canvas id="c" width="480" height="480"></canvas>
 <p id="msg">Нажми любую стрелку, чтобы начать</p>
@@ -30,7 +33,7 @@ button{font:inherit;padding:8px 18px;border-radius:8px;border:1px solid var(--te
 const NAME='ИЗАБЕЛЛА',N=20,S=480/N,cv=document.getElementById('c'),ctx=cv.getContext('2d');
 const sc=document.getElementById('score'),bs=document.getElementById('best'),msg=document.getElementById('msg'),nm=document.getElementById('name');
 nm.innerHTML=[...NAME].map(l=>`<span>${l}</span>`).join('');
-const spans=[...nm.children];
+const spans=[...nm.children],love=document.getElementById('love');
 let best=0;try{best=+localStorage.getItem('isabella-best')||0}catch(e){}
 bs.textContent=best;
 let snake,dir,next,food,score,timer,running,started,won;
@@ -39,7 +42,7 @@ function reset(){
   clearInterval(timer);
   snake=[{x:10,y:10}];dir=null;next=null;score=0;running=false;started=false;won=false;
   sc.textContent=0;msg.textContent='Нажми любую стрелку, чтобы начать';
-  updateName();placeFood();draw();
+  love.classList.remove('on');updateName();placeFood();draw();
 }
 function updateName(){spans.forEach((s,i)=>s.classList.toggle('on',i<snake.length-1))}
 function placeFood(){
@@ -57,7 +60,7 @@ function tick(){
     score++;sc.textContent=score;
     if(score>best){best=score;bs.textContent=best;try{localStorage.setItem('isabella-best',best)}catch(e){}}
     updateName();
-    if(!won&&snake.length-1>=NAME.length){won=true;msg.textContent='Имя «Изабелла» собрано! Играй дальше 💖'}
+    if(!won&&snake.length-1>=NAME.length){won=true;love.classList.add('on');msg.textContent='Имя «Изабелла» собрано! Играй дальше 💖'}
     placeFood();
   }else snake.pop();
   draw();
