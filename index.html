@@ -3,19 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Изабелла</title>
+<title>Изабелла + Роберт</title>
 <style>
 :root{--bg:#f4f4f0;--fg:#1c1c1a;--board:#e4e6df;--snake:#2f8f4e;--head:#1d6b37;--food:#d6402f;--muted:#b8b8b0;--text:#6b6b66;--onsnake:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161816;--fg:#ececE6;--board:#222622;--snake:#4cc27a;--head:#7be0a1;--food:#ff6b57;--muted:#3b3f3b;--text:#9a9a94;--onsnake:#10200f;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#161816;--fg:#ececE6;--board:#222622;--snake:#4cc27a;--head:#7be0a1;--food:#ff6b57;--muted:#3b3f3b;--text:#9a9a94;--onsnake:#10200f;color-scheme:dark}
 html,body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 body{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
-#name{display:flex;gap:4px;font-size:clamp(1.6rem,8vw,2.6rem);font-weight:700;letter-spacing:.04em}
-#name{min-height:1.3em}
+#name{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;font-size:clamp(1.1rem,5.4vw,2rem);font-weight:700;letter-spacing:.02em;min-height:1.3em}
 #name span{color:var(--snake);opacity:0;transform:scale(.6);transition:opacity .3s,transform .3s}
-#name span.on{opacity:1;transform:scale(1.1)}
-#love{font-size:clamp(1.1rem,5vw,1.6rem);font-weight:600;color:var(--food);opacity:0;transform:translateY(6px);transition:opacity .6s,transform .6s;min-height:1.3em}
-#love.on{opacity:1;transform:none}
+#name span.on{opacity:1;transform:scale(1.05)}
 #info{display:flex;gap:24px;font-size:1rem}
 canvas{width:min(92vw,480px);height:auto;aspect-ratio:1;background:var(--board);border-radius:10px;touch-action:none}
 p{margin:0;color:var(--text);font-size:.9rem;text-align:center}
@@ -24,32 +21,31 @@ button{font:inherit;padding:8px 18px;border-radius:8px;border:1px solid var(--te
 </head>
 <body>
 <div id="name"></div>
-<div id="love">Изабелла + Роберт = ❤️</div>
-<div id="info"><span>Буквы: <b id="score">0</b></span><span>Рекорд: <b id="best">0</b></span></div>
+<div id="info"><span>Символы: <b id="score">0</b></span><span>Рекорд: <b id="best">0</b></span></div>
 <canvas id="c" width="480" height="480"></canvas>
 <p id="msg">Нажми любую стрелку, чтобы начать</p>
 <button id="restart">Заново</button>
 <script>
-const NAME='ИЗАБЕЛЛА',N=20,S=480/N,cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const PH=['И','З','А','Б','Е','Л','Л','А','+','Р','О','Б','Е','Р','Т','=','❤️'],N=20,S=480/N,cv=document.getElementById('c'),ctx=cv.getContext('2d');
 const sc=document.getElementById('score'),bs=document.getElementById('best'),msg=document.getElementById('msg'),nm=document.getElementById('name');
-nm.innerHTML=[...NAME].map(l=>`<span>${l}</span>`).join('');
-const spans=[...nm.children],love=document.getElementById('love');
+nm.innerHTML=PH.map(l=>`<span>${l}</span>`).join('');
+const spans=[...nm.children];
 let best=0;try{best=+localStorage.getItem('isabella-best')||0}catch(e){}
 bs.textContent=best;
-let snake,dir,next,food,score,timer,running,started,won;
+let snake,dir,next,food,score,timer,running,started,won,celebrating=false,raf=0,t0w=0,parts=[],lastBurst=0;
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function reset(){
-  clearInterval(timer);
+  clearInterval(timer);cancelAnimationFrame(raf);celebrating=false;parts=[];
   snake=[{x:10,y:10}];dir=null;next=null;score=0;running=false;started=false;won=false;
   sc.textContent=0;msg.textContent='Нажми любую стрелку, чтобы начать';
-  love.classList.remove('on');updateName();placeFood();draw();
+  updateName();placeFood();draw();
 }
 function updateName(){spans.forEach((s,i)=>s.classList.toggle('on',i<snake.length-1))}
 function placeFood(){
   do{food={x:Math.floor(Math.random()*N),y:Math.floor(Math.random()*N)}}
   while(snake.some(s=>s.x===food.x&&s.y===food.y));
 }
-function start(){started=true;running=true;msg.textContent='Лови красные точки, и появится имя';timer=setInterval(tick,120)}
+function start(){started=true;running=true;msg.textContent='Лови красные точки, и фраза заполнится';timer=setInterval(tick,120)}
 function tick(){
   if(next)dir=next;
   if(!dir)return;
@@ -60,7 +56,7 @@ function tick(){
     score++;sc.textContent=score;
     if(score>best){best=score;bs.textContent=best;try{localStorage.setItem('isabella-best',best)}catch(e){}}
     updateName();
-    if(snake.length-1>=NAME.length){won=true;love.classList.add('on');msg.textContent='Победа! Имя «Изабелла» собрано 💖 Нажми «Заново» или Пробел';clearInterval(timer);running=false;draw();return}
+    if(snake.length-1>=PH.length)return win();
     placeFood();
   }else snake.pop();
   draw();
@@ -72,8 +68,51 @@ function draw(){
   ctx.font=`700 ${Math.round(S*.68)}px system-ui,sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
   snake.forEach((s,i)=>{
     ctx.fillStyle=css(i?'--snake':'--head');ctx.beginPath();ctx.roundRect(s.x*S+1,s.y*S+1,S-2,S-2,6);ctx.fill();
-    if(i>0){ctx.fillStyle=css('--onsnake');ctx.fillText(NAME[(i-1)%NAME.length],s.x*S+S/2,s.y*S+S/2+1)}
+    if(i>0){ctx.fillStyle=css('--onsnake');ctx.fillText(PH[(i-1)%PH.length],s.x*S+S/2,s.y*S+S/2+1)}
   });
+}
+/* ---- победа: большое пиксельное сердце и салют ---- */
+const HEART=[
+'00110001100',
+'01111011110',
+'11111111111',
+'11111111111',
+'11111111111',
+'01111111110',
+'00111111100',
+'00011111000',
+'00001110000',
+'00000100000'];
+const FW=['#ff4d6d','#ffd23f','#4cc27a','#4dabf7','#f783ac','#ff9f1c','#b197fc'];
+function burst(x,y){
+  const c=FW[Math.floor(Math.random()*FW.length)],n=32;
+  for(let i=0;i<n;i++){
+    const a=i/n*Math.PI*2,v=1.2+Math.random()*2.2;
+    parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1,c,s:Math.random()<.3?6:4});
+  }
+}
+function win(){
+  clearInterval(timer);running=false;won=true;celebrating=true;t0w=performance.now();lastBurst=0;parts=[];
+  msg.textContent='Вы победили! 💖 Нажми «Заново» или Пробел';
+  raf=requestAnimationFrame(celebrate);
+}
+function celebrate(ts){
+  if(!celebrating)return;
+  const t=(ts||performance.now())-t0w;
+  if(t-lastBurst>380){lastBurst=t;burst(40+Math.random()*400,50+Math.random()*340)}
+  ctx.clearRect(0,0,480,480);
+  /* сердце: вырастает за секунду, потом пульсирует */
+  const grow=Math.min(1,t/900),pulse=grow<1?grow:1+Math.sin((t-900)/220)*.04,P=Math.round(28*pulse*(grow<1?(1-Math.pow(1-grow,3)):1));
+  const w=11*P,h=10*P,ox=Math.round(240-w/2),oy=Math.round(255-h/2);
+  ctx.fillStyle=css('--food');
+  HEART.forEach((row,y)=>[...row].forEach((c,x)=>{if(c==='1')ctx.fillRect(ox+x*P,oy+y*P,P-2,P-2)}));
+  /* частицы-пиксели */
+  parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.045;p.vx*=.992;p.life-=.012;
+    if(p.life>0){ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.c;ctx.fillRect(Math.round(p.x/4)*4,Math.round(p.y/4)*4,p.s,p.s)}});
+  ctx.globalAlpha=1;parts=parts.filter(p=>p.life>0);
+  ctx.fillStyle=css('--fg');ctx.font='800 40px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('ВЫ ПОБЕДИЛИ!',240,42);
+  raf=requestAnimationFrame(celebrate);
 }
 function turn(d){
   if(!started&&!running)start();
