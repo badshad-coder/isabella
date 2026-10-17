@@ -60,7 +60,7 @@ function tick(){
     score++;sc.textContent=score;
     if(score>best){best=score;bs.textContent=best;try{localStorage.setItem('isabella-best',best)}catch(e){}}
     updateName();
-    if(!won&&snake.length-1>=NAME.length){won=true;love.classList.add('on');msg.textContent='Имя «Изабелла» собрано! Играй дальше 💖'}
+    if(snake.length-1>=NAME.length){won=true;love.classList.add('on');msg.textContent='Победа! Имя «Изабелла» собрано 💖 Нажми «Заново» или Пробел';clearInterval(timer);running=false;draw();return}
     placeFood();
   }else snake.pop();
   draw();
